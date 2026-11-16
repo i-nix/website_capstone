@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concept: FPGA-Based EIS for Skin Tissue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --night: #13253A;     /* dark navy, hero + footer */
+  --ink: #1C2A39;
+  --cream: #F4F1EA;
+  --sky: #CFE6F8;       /* pale sky (from the poster) */
+  --peach: #FDE5D6;     /* pastel peach (from the poster) */
+  --blue: #2F5D8A;
+  --text: #3A4756;
+  --serif: "Playfair Display", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --sans: "DM Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--sans); color: var(--text); background: var(--cream); }
+
+/* ---------- corner logo: line-art board that turns into the real board on hover ---------- */
+.logo {
+  position: fixed; top: 18px; left: 18px; z-index: 20;
+  display: grid; place-items: center; width: 132px; height: 96px;
+  border-radius: 28px; background: transparent; border: 1.5px solid transparent;
+  transition: background 0.35s, border-color 0.35s, transform 0.35s;
+  cursor: pointer; text-decoration: none;
+}
+.logo svg { position: absolute; width: 104px; height: 68px; transition: opacity 0.35s, transform 0.5s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.logo .color { opacity: 0; transform: rotate(-4deg) scale(0.9); }
+.logo:hover, .logo:focus-visible { background: var(--cream); border-color: var(--ink); }
+.logo:hover .line, .logo:focus-visible .line { opacity: 0; }
+.logo:hover .color, .logo:focus-visible .color { opacity: 1; transform: none; }
+.logo .line * { fill: none; stroke: var(--cream); stroke-width: 14; stroke-linejoin: round; }
+.logo .line .dotrow { stroke-dasharray: 2 26; stroke-linecap: round; stroke-width: 16; }
+body.past-hero .logo .line * { stroke: var(--ink); }
+.color .led { animation: led 1s steps(1) infinite; }
+.color .pin { fill: #D4AF37; animation: pin 0.9s steps(1) infinite; }
+@keyframes led { 50% { fill: #7A1424; } }
+@keyframes pin { 50% { fill: #5A4712; } }
+
+/* ---------- menu tile ---------- */
+.menu {
+  position: fixed; top: 18px; right: 18px; z-index: 20; width: 96px; height: 96px;
+  background: var(--cream); border: 1.5px solid var(--ink); border-radius: 0; cursor: pointer;
+  display: grid; place-items: center; color: var(--ink); transition: border-radius 0.35s, background 0.35s;
+}
+.menu:hover { border-radius: 28px; background: var(--sky); }
+.menu svg { width: 52px; height: 36px; overflow: visible; }
+.menu path { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+
+/* ---------- full-bleed moving hero ---------- */
+.hero { position: relative; height: 100vh; min-height: 620px; background: var(--night); overflow: hidden; }
+.hero canvas, .hero video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(19,37,58,0) 40%, rgba(19,37,58,0.55) 100%); pointer-events: none; }
+.hero-text { position: absolute; left: 6vw; right: 6vw; bottom: 9vh; z-index: 2; display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; }
+.hero h1 { margin: 0; color: var(--cream); font-family: var(--serif); font-weight: 500; font-size: clamp(2.6rem, 6.4vw, 6rem); line-height: 1.02; letter-spacing: -0.02em; max-width: 15ch; }
+.pills { display: flex; gap: 8px; flex-shrink: 0; }
+.pill {
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.95rem;
+  color: var(--ink); background: var(--cream); border: 1.5px solid var(--cream); border-radius: 999px;
+  padding: 0.85rem 1.4rem; text-decoration: none; transition: background 0.25s, color 0.25s;
+}
+.pill:hover { background: transparent; color: var(--cream); }
+.pill.round { padding: 0; width: 52px; display: grid; place-items: center; background: transparent; color: var(--cream); }
+.pill.round:hover { background: var(--cream); color: var(--ink); }
+
+/* ---------- big-word sections ---------- */
+.band { position: relative; overflow: hidden; padding: 7rem 6vw 8rem; display: grid; grid-template-columns: 1.1fr 1fr; gap: 4rem; align-items: start; }
+.band.sky { background: var(--sky); }
+.band.peach { background: var(--peach); }
+.band .blob { position: absolute; z-index: 0; opacity: 0.5; pointer-events: none; }
+.band > *:not(.blob) { position: relative; z-index: 1; }
+.big { margin: 0; font-family: var(--serif); font-weight: 500; color: var(--ink); font-size: clamp(5rem, 13vw, 12rem); line-height: 0.9; letter-spacing: -0.03em; }
+.band .copy { padding-top: 1rem; font-size: 1.25rem; line-height: 1.7; color: var(--ink); max-width: 34ch; }
+.band .copy .pill { display: inline-block; margin-top: 1.5rem; background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.band .copy .pill:hover { background: transparent; color: var(--ink); }
+.tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem; color: var(--blue); margin: 0 0 1rem; }
+
+/* ---------- footer tiles ---------- */
+footer { background: var(--night); color: var(--cream); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr 1.6fr; }
+.tiles.row2 { grid-template-columns: 1.3fr 1.3fr 1fr; }
+.tile {
+  display: grid; place-items: center; height: 220px; text-decoration: none; color: var(--cream);
+  font-family: var(--serif); font-size: clamp(2.2rem, 4.5vw, 4.2rem); letter-spacing: -0.02em;
+  border: 1.5px solid rgba(244, 241, 234, 0.7); margin: -0.75px; transition: background 0.3s, color 0.3s, border-radius 0.35s;
+}
+.tile.pillish { border-radius: 999px; }
+.tile:hover { background: var(--sky); color: var(--ink); border-radius: 0; }
+.tile.pillish:hover { border-radius: 40px; }
+.foot-note { padding: 2.5rem 6vw; font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.04em; color: #B9C6D3; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .band { grid-template-columns: 1fr; gap: 1rem; }
+  .hero-text { flex-direction: column; align-items: flex-start; }
+  .tiles, .tiles.row2 { grid-template-columns: 1fr; }
+  .tile { height: 130px; }
+  .logo, .menu { width: 76px; height: 76px; }
+  .logo svg { width: 64px; height: 42px; }
+}
+</style>
+</head>
+<body>
+
+<!-- corner logo -->
+<a class="logo" href="#top" aria-label="Back to top">
+  <!-- line-art version (default) -->
+  <svg class="line" viewBox="0 0 836 544" aria-hidden="true">
+    <rect x="24" y="22" width="788" height="500" rx="40"/>
+    <rect x="292" y="204" width="120" height="112" rx="8"/>
+    <rect x="494" y="224" width="56" height="80" rx="6"/>
+    <rect x="474" y="32" width="296" height="40" rx="6"/>
+    <line class="dotrow" x1="486" y1="52" x2="760" y2="52"/>
+    <rect x="36" y="186" width="130" height="96" rx="8"/>
+    <rect x="242" y="24" width="80" height="80" rx="6"/>
+    <rect x="740" y="236" width="76" height="90" rx="6"/>
+    <rect x="740" y="366" width="76" height="90" rx="6"/>
+    <rect x="486" y="404" width="232" height="24" rx="6"/>
+    <circle cx="72" cy="45" r="14"/><circle cx="795" cy="45" r="14"/><circle cx="72" cy="490" r="14"/><circle cx="793" cy="486" r="14"/>
+  </svg>
+  <!-- full-color version (on hover) -->
+  <svg class="color" viewBox="0 0 836 544" aria-hidden="true"></svg>
+</a>
+
+<!-- menu tile -->
+<button class="menu" aria-label="Open menu"><svg viewBox="0 0 52 36" aria-hidden="true"><path/><path/><path/></svg></button>
+
+<main id="top">
+  <section class="hero">
+    <!-- drop a short looping clip at media/hero.mp4 (oscilloscope, board, electrodes) and it plays here;
+         without it, the moving contour field runs instead -->
+    <canvas id="field" aria-hidden="true"></canvas>
+    <div class="hero-text">
+      <h1>Reading skin, one frequency at a time.</h1>
+      <div class="pills">
+        <a class="pill" href="#video">Watch our interim update</a>
+        <a class="pill round" href="#video" aria-label="Play video">&#9654;</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="band sky">
+    <svg class="blob" viewBox="0 0 600 600" style="left:38%;top:-20%;width:46vw" aria-hidden="true"><path fill="#EAF4FC" d="M420 40c90 60 150 170 120 280s-140 220-260 230S40 470 20 360 60 120 160 60 330-20 420 40z"/></svg>
+    <h2 class="big">Scope</h2>
+    <div class="copy">
+      <p class="tag">Project Scope</p>
+      We are building a system that sends a current through the skin and extracts the response at several frequencies. The result is an impedance spectrum and it gives information about the structure of the tissue underneath.
+      <br><a class="pill" href="#how">How it works</a>
+    </div>
+  </section>
+
+  <section class="band peach">
+    <svg class="blob" viewBox="0 0 600 600" style="right:-8%;bottom:-30%;width:40vw" aria-hidden="true"><path fill="#FFF2EA" d="M300 30c120 0 250 80 270 200s-60 260-190 300S90 520 50 400 40 140 120 80 200 30 300 30z"/></svg>
+    <h2 class="big">Why</h2>
+    <div class="copy">
+      <p class="tag">Justification</p>
+      Biopsies are invasive. Melanoma caught early has a five-year survival rate above 99%, and the one commercial EIS system is expensive and hard to access.
+      <br><a class="pill" href="#why">Read the justification</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="tiles">
+    <a class="tile" href="#how">How It Works</a>
+    <a class="tile pillish" href="#design">Design</a>
+    <a class="tile pillish" href="#results">Results</a>
+  </div>
+  <div class="tiles row2">
+    <a class="tile pillish" href="#gallery">Gallery</a>
+    <a class="tile" href="#team">Team</a>
+    <a class="tile pillish" href="#refs">References</a>
+  </div>
+  <div class="foot-note"><span>ESE 4970 Capstone Design &middot; Washington University in St. Louis</span><span>Concept mockup</span></div>
+</footer>
+
+<script>
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function createTopo(host, cv, opts = {}) {
+    const ctx = cv.getContext('2d');
+    const G = opts.grid || 8, LEVELS = opts.levels || 14, ALPHA = opts.alpha || 1;
+    let W = 0, H = 0, t = 0, running = false;
+    const mouse = { x: -9999, y: -9999, tx: -9999, ty: -9999, amp: 0, target: 0 };
+    const pulses = [];
+    const peak = opts.peak || null;
+
+    const P = new Float32Array(1024);
+    for (let i = 0; i < P.length; i++) P[i] = Math.random();
+    const hash = (x, y) => P[((x * 73856093) ^ (y * 19349663)) & 1023];
+    const ease = a => a * a * (3 - 2 * a);
+    function noise(x, y) {
+      const xi = Math.floor(x), yi = Math.floor(y), xf = ease(x - xi), yf = ease(y - yi);
+      const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+      return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf;
+    }
+    function field(x, y) {
+      let v = noise(x * 0.006 + t * 0.3, y * 0.006) * 0.6
+            + noise(x * 0.016, y * 0.016 - t * 0.2) * 0.3
+            + noise(x * 0.04 + t, y * 0.04) * 0.1;
+      const dx = x - mouse.x, dy = y - mouse.y;
+      v += 0.5 * mouse.amp * Math.exp(-(dx * dx + dy * dy) / 12000);
+      if (peak && peak.amp > 0.001) {
+        const px = x - W * peak.fx, py = y - H * peak.fy, sp = Math.pow(Math.min(W, H) * 0.32, 2);
+        v += peak.amp * Math.exp(-(px * px + py * py) / sp);
+      }
+      for (const p of pulses) {
+        const ex = x - p.x, ey = y - p.y, d = Math.sqrt(ex * ex + ey * ey) - p.r;
+        v += 0.22 * p.life * Math.exp(-(d * d) / 900);
+      }
+      return v;
+    }
+
+    const edges = {1:[3,2],2:[2,1],3:[3,1],4:[0,1],5:[3,0,2,1],6:[0,2],7:[3,0],8:[3,0],9:[0,2],10:[0,1,3,2],11:[0,1],12:[3,1],13:[2,1],14:[3,2]};
+    let vals = new Float32Array(0);
+    const pt = [[0,0],[0,0],[0,0],[0,0]];
+
+    function frame() {
+      t += 0.0035;
+      mouse.x += (mouse.tx - mouse.x) * 0.12;
+      mouse.y += (mouse.ty - mouse.y) * 0.12;
+      mouse.amp += (mouse.target - mouse.amp) * 0.06;
+      if (peak) peak.amp += ((peak.target || 0) - peak.amp) * 0.04;
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const p = pulses[i]; p.r += 4; p.life *= 0.975;
+        if (p.life < 0.02) pulses.splice(i, 1);
+      }
+      const cols = Math.ceil(W / G) + 1, rows = Math.ceil(H / G) + 1;
+      if (vals.length !== cols * rows) vals = new Float32Array(cols * rows);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) vals[j * cols + i] = field(i * G, j * G);
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = opts.color || '#2F5D8A';
+      ctx.lineWidth = 1;
+      for (let k = 1; k <= LEVELS; k++) {
+        const L = 0.12 + (k / LEVELS) * 0.95 * (peak ? 1.5 : 1);
+        ctx.globalAlpha = Math.min(1, (0.07 + 0.28 * (k / LEVELS)) * ALPHA);
+        ctx.beginPath();
+        for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+          const a = vals[j * cols + i], b = vals[j * cols + i + 1];
+          const c = vals[(j + 1) * cols + i + 1], d = vals[(j + 1) * cols + i];
+          const s = (a > L ? 8 : 0) | (b > L ? 4 : 0) | (c > L ? 2 : 0) | (d > L ? 1 : 0);
+          if (s === 0 || s === 15) continue;
+          const x = i * G, y = j * G;
+          pt[0][0] = x + G * (L - a) / (b - a); pt[0][1] = y;
+          pt[1][0] = x + G;                     pt[1][1] = y + G * (L - b) / (c - b);
+          pt[2][0] = x + G * (L - d) / (c - d); pt[2][1] = y + G;
+          pt[3][0] = x;                         pt[3][1] = y + G * (L - a) / (d - a);
+          const e = edges[s];
+          for (let m = 0; m < e.length; m += 2) {
+            ctx.moveTo(pt[e[m]][0], pt[e[m]][1]);
+            ctx.lineTo(pt[e[m + 1]][0], pt[e[m + 1]][1]);
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      if (running) requestAnimationFrame(frame);
+    }
+
+    function resize() {
+      const d = Math.min(window.devicePixelRatio || 1, 2);
+      W = host.clientWidth; H = host.clientHeight;
+      cv.width = W * d; cv.height = H * d;
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+      if (!running) frame();
+    }
+
+    return {
+      resize,
+      start() { if (!running && !reduceMotion) { running = true; requestAnimationFrame(frame); } },
+      stop() { running = false; },
+      pulse(x, y) { pulses.push({ x, y, r: 0, life: 1 }); if (pulses.length > 8) pulses.shift(); },
+      pointer(x, y) { mouse.tx = x; mouse.ty = y; if (mouse.target === 0) { mouse.x = x; mouse.y = y; } mouse.target = 1; },
+      leave() { mouse.target = 0; },
+      size: () => [W, H]
+    };
+  }
+  /* moving field behind the hero */
+  const heroEl = document.querySelector('.hero');
+  const field = createTopo(heroEl, document.getElementById('field'), { color: '#9FC3E6', alpha: 1.6, levels: 16 });
+  heroEl.addEventListener('pointermove', e => { const r = heroEl.getBoundingClientRect(); field.pointer(e.clientX - r.left, e.clientY - r.top); });
+  heroEl.addEventListener('pointerleave', () => field.leave());
+  heroEl.addEventListener('click', e => { if (e.target.closest('a')) return; const r = heroEl.getBoundingClientRect(); field.pulse(e.clientX - r.left, e.clientY - r.top); });
+  window.addEventListener('resize', field.resize);
+  field.resize(); field.start();
+
+  /* logo line-art switches to dark once you scroll past the hero */
+  new IntersectionObserver(([en]) => document.body.classList.toggle('past-hero', !en.isIntersecting), { threshold: 0.08 }).observe(heroEl);
+
+  /* full-color PYNQ-Z2 */
+  (() => {
+    let s = '';
+    // drawn in the photo's own coordinates (836 x 544)
+    const RED = '#D9263B', SILK = '#F4F1EA', BLK = '#141414', MET = '#C9CDD2', METD = '#8F969E', GOLD = '#D4AF37';
+    const r = (x, y, w, h, f, extra = '') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}" ${extra}/>`;
+    // PCB
+    s += r(20, 18, 796, 508, RED, 'rx="14"');
+    // gold mounting holes
+    [[72, 45], [795, 45], [72, 490], [793, 486]].forEach(([x, y]) => s += `<circle cx="${x}" cy="${y}" r="17" fill="${GOLD}"/><circle cx="${x}" cy="${y}" r="9" fill="#2B1A0E"/>`);
+    // top edge: audio jack, USB-A, HDMI
+    s += r(112, 22, 42, 92, BLK, 'rx="4"');
+    s += r(242, 24, 80, 80, MET, `rx="3" stroke="${METD}" stroke-width="3"`) + r(256, 38, 52, 26, '#E8EBEE');
+    s += r(350, 24, 88, 70, MET, `rx="3" stroke="${METD}" stroke-width="3"`) + r(364, 40, 60, 22, '#55595E', 'rx="4"');
+    // Raspberry Pi 2x20 header
+    s += r(474, 32, 296, 40, BLK, 'rx="3"');
+    for (let k = 0; k < 20; k++) for (let j = 0; j < 2; j++) s += r(482 + k * 14.5, 40 + j * 16, 7, 7, GOLD);
+    // left edge: line-in jack, Ethernet, micro USB, power switch, DC jack
+    s += r(18, 112, 88, 58, BLK, 'rx="5"');
+    s += r(36, 186, 130, 96, MET, `rx="4" stroke="${METD}" stroke-width="3"`);
+    for (let k = 0; k < 5; k++) s += r(46, 196 + k * 16, 110, 6, '#B3B9C0');
+    s += r(40, 304, 44, 34, MET, 'rx="5"');
+    s += r(54, 368, 70, 36, '#2E2E2E', 'rx="4"') + r(64, 376, 24, 20, MET);
+    s += r(48, 412, 76, 58, MET, `rx="4" stroke="${METD}" stroke-width="3"`);
+    // right edge: HDMI, JTAG, two Pmods (pins blink)
+    s += r(752, 88, 66, 84, MET, `rx="3" stroke="${METD}" stroke-width="3"`) + r(766, 104, 26, 52, '#55595E', 'rx="4"');
+    s += r(748, 184, 58, 44, BLK, 'rx="3"');
+    [236, 366].forEach(y => {
+      s += r(740, y, 76, 90, BLK, 'rx="4"');
+      for (let k = 0; k < 6; k++) for (let j = 0; j < 2; j++)
+        s += `<rect class="pin" x="${752 + j * 16}" y="${y + 10 + k * 13}" width="8" height="8" style="animation-delay:${(Math.random() * 0.9).toFixed(2)}s"/>`;
+    });
+    // Arduino / ChipKit headers
+    s += r(430, 120, 280, 26, BLK, 'rx="3"') + r(486, 404, 116, 24, BLK, 'rx="3"') + r(612, 404, 106, 24, BLK, 'rx="3"');
+    for (let k = 0; k < 18; k++) s += r(438 + k * 15.5, 129, 6, 6, GOLD);
+    for (let k = 0; k < 15; k++) s += r(494 + k * 15, 412, 6, 6, GOLD);
+    // Zynq with heatsink, DDR, other chips
+    s += `<text x="296" y="196" font-family="Arial, sans-serif" font-size="20" font-style="italic" font-weight="700" fill="${BLK}">Zynq 7020</text>`;
+    s += r(292, 204, 120, 112, BLK, 'rx="3"');
+    for (let k = 0; k < 13; k++) s += r(300 + k * 8.6, 210, 4, 100, '#2F2F2F');
+    s += r(494, 224, 56, 80, BLK, 'rx="2"');
+    s += r(160, 330, 56, 54, BLK, 'rx="2"') + r(372, 404, 46, 46, BLK, 'rx="2"') + r(156, 134, 30, 30, BLK);
+    // inductors
+    [[322, 384], [322, 428], [442, 368], [442, 406]].forEach(([x, y]) => s += r(x, y, 32, 30, '#3A3A3A', 'rx="6"'));
+    // slide switches + push buttons + LEDs
+    [228, 270].forEach(x => s += r(x, 436, 34, 70, BLK, 'rx="3"') + r(x + 9, 452, 16, 22, MET));
+    [338, 396, 560, 618, 676, 734].forEach(x => s += r(x - 16, 476, 32, 32, MET, 'rx="3"') + `<circle cx="${x}" cy="492" r="9" fill="${BLK}"/>`);
+    [560, 618, 676, 734].forEach((x, k) => s += `<rect class="led" x="${x - 8}" y="452" width="16" height="10" rx="2" fill="#4ADE80" style="animation-delay:${(k * 0.27).toFixed(2)}s"/>`);
+    // SD card slot
+    s += r(456, 506, 76, 20, '#2E2E2E');
+    // silkscreen
+    s += `<text x="580" y="196" font-family="Arial, sans-serif" font-size="30" fill="${BLK}">PYNQ-Z2</text>`;
+    s += `<text x="584" y="356" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="${BLK}">XILINX</text>`;
+    s += `<circle cx="608" cy="300" r="30" fill="#F7E64B"/>`;
+    s += `<text x="472" y="98" font-family="Arial, sans-serif" font-size="11" fill="${SILK}">RASPBERRY PI (BOARD CONNECTS OUTWARD)</text>`;
+
+    document.querySelector('.logo .color').innerHTML = s;
+  })();
+
+  /* menu lines turn into sine waves on hover */
+  (() => {
+    const btn = document.querySelector('.menu'), paths = [...btn.querySelectorAll('path')];
+    let amp = 0, ampT = 0, phase = 0, raf = 0;
+    function draw() {
+      amp += (ampT - amp) * 0.15; phase += 0.2;
+      paths.forEach((p, j) => {
+        const y0 = 6 + j * 12; let d = '';
+        for (let k = 0; k <= 52; k++) d += (k ? 'L' : 'M') + k + ' ' + (y0 + 4 * amp * Math.sin((k / 52) * (1.5 + j * 0.5) * Math.PI * 2 - phase - j)).toFixed(2);
+        p.setAttribute('d', d);
+      });
+      raf = (Math.abs(ampT - amp) > 0.005 || amp > 0.01) ? requestAnimationFrame(draw) : 0;
+    }
+    btn.addEventListener('mouseenter', () => { ampT = 1; if (!raf) raf = requestAnimationFrame(draw); });
+    btn.addEventListener('mouseleave', () => { ampT = 0; if (!raf) raf = requestAnimationFrame(draw); });
+    draw();
+  })();
+</script>
+</body>
+</html>
