@@ -45,7 +45,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-
 }
 .logo svg { position: absolute; width: 80px; height: 52px; transition: opacity 0.35s, transform 0.5s cubic-bezier(0.3, 1.4, 0.5, 1); }
 .logo .color { opacity: 0; transform: rotate(-4deg) scale(0.9); }
-.logo:hover, .logo:focus-visible { background: var(--cream); border-color: var(--ink); }
+.logo:hover, .logo:focus-visible { background: var(--cream); }
 .logo:hover .line, .logo:focus-visible .line { opacity: 0; }
 .logo:hover .color, .logo:focus-visible .color { opacity: 1; transform: none; }
 .logo .line * { fill: none; stroke: var(--ink); stroke-width: 16; stroke-linejoin: round; transition: stroke 0.3s; }
@@ -59,10 +59,10 @@ body.on-dark .logo .line * { stroke: var(--cream); }
 /* ---------- menu tile ---------- */
 .menu {
   position: fixed; top: 16px; right: 16px; z-index: 40; width: 68px; height: 68px;
-  background: var(--cream); border: 1.5px solid var(--ink); border-radius: 0; cursor: pointer;
-  display: grid; place-items: center; color: var(--ink); transition: border-radius 0.35s, background 0.35s;
+  background: var(--cream); border: 1.5px solid var(--ink); border-radius: 22px; cursor: pointer;
+  display: grid; place-items: center; color: var(--ink); transition: background 0.35s;
 }
-.menu:hover, .menu[aria-expanded="true"] { border-radius: 22px; background: var(--sky); }
+.menu:hover, .menu[aria-expanded="true"] { background: var(--sky); }
 .menu svg { width: 36px; height: 26px; overflow: visible; }
 .menu path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 
@@ -802,13 +802,13 @@ section.block h2 { font-weight: 500; }
 
     function frame() {
       t += 1;
-      mouse.x += (mouse.tx - mouse.x) * 0.15; mouse.y += (mouse.ty - mouse.y) * 0.15;
+      mouse.x += (mouse.tx - mouse.x) * 0.08; mouse.y += (mouse.ty - mouse.y) * 0.08;
       mouse.a += (mouse.at - mouse.a) * 0.08;
-      for (let k = pulses.length - 1; k >= 0; k--) { const p = pulses[k]; p.r += 9; p.life *= 0.975; if (p.life < 0.03) pulses.splice(k, 1); }
+      for (let k = pulses.length - 1; k >= 0; k--) { const p = pulses[k]; p.r += 3.5; p.life *= 0.99; if (p.life < 0.03) pulses.splice(k, 1); }
 
       ctx.clearRect(0, 0, W, H);
       // faint monitor grid
-      ctx.globalAlpha = 0.07; ctx.strokeStyle = '#CFE6F8'; ctx.lineWidth = 1; ctx.beginPath();
+      ctx.globalAlpha = 0.06; ctx.strokeStyle = '#9DB4CE'; ctx.lineWidth = 1; ctx.beginPath();
       for (let x = 0; x < W; x += 48) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); }
       for (let y = 0; y < H; y += 48) { ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
       ctx.stroke();
@@ -828,18 +828,18 @@ section.block h2 { font-weight: 500; }
           }
           let y;
           if (tr.ecg) {
-            const period = 260, u = (((x + t * 2.2 * tr.sp + tr.ph * 40) % period) + period) % period / period;
+            const period = 260, u = (((x + t * 0.45 * tr.sp + tr.ph * 40) % period) + period) % period / period;
             y = tr.y - tr.amp * 1.3 * beat(u) * boost;
           } else {
-            const phase = 2 * Math.PI * (tr.f0 * x + tr.f0 * 3 * x * x / W) - t * 0.035 * tr.sp + tr.ph;
-            y = tr.y + tr.amp * Math.sin(phase) * boost * (0.55 + 0.45 * Math.sin(t * 0.004 + tr.i));
+            const phase = 2 * Math.PI * (tr.f0 * x + tr.f0 * 3 * x * x / W) - t * 0.007 * tr.sp + tr.ph;
+            y = tr.y + tr.amp * Math.sin(phase) * boost * (0.55 + 0.45 * Math.sin(t * 0.0012 + tr.i));
           }
-          y -= spike * tr.amp * 2.4 * Math.sin(x * 0.09 + t * 0.2);
+          y -= spike * tr.amp * 2.4 * Math.sin(x * 0.09 + t * 0.05);
           x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         }
-        ctx.lineWidth = tr.ecg ? 2 : 1.3;
-        ctx.strokeStyle = tr.ecg ? '#F6C9AE' : (tr.i % 3 === 0 ? '#CFE6F8' : '#7FA7CF');
-        ctx.globalAlpha = tr.ecg ? 0.85 : (tr.i % 3 === 0 ? 0.55 : 0.35);
+        ctx.lineWidth = tr.ecg ? 1.6 : 1.3;
+        ctx.strokeStyle = '#9DB4CE';                       // one muted blue for every trace
+        ctx.globalAlpha = tr.ecg ? 0.6 : (tr.i % 3 === 0 ? 0.5 : 0.32);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
